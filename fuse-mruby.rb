@@ -71,8 +71,13 @@ def utimesf(arg_path,tmf=nil)
   path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
   pp = path.split("/")
 
-  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
-  entries[ pp.last ][ :mtime ]  = (tmf!=nil) ? Time.at(tmf) : Time.new
+  if pp.count == 0 then
+    e = @entries
+  else
+    entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+    e = entries[ pp.last ]
+  end
+  e[ :mtime ]  = (tmf!=nil) ? Time.at(tmf) : Time.new
 
   ret
 end
@@ -142,8 +147,10 @@ end
 
 
  create  "/Maildir/tmp/testfile"
+ utimesf "/Maildir/tmp/testfile"
  readdir "/Maildir/tmp/"
  unlink  "/Maildir/tmp/testfile"
  readdir "/Maildir/tmp/"
 
+# utimesf "/"
 
