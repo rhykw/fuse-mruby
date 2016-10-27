@@ -292,6 +292,23 @@ static int mrb_fuse_mkdir(const char * path, mode_t mode) {
 }
 
 
+static int mrb_fuse_chmod(const char * path, mode_t mode) {
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "chmod", 2,
+                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(mode));
+  MRB_FUSE_ERR_CHECK;
+  return 0;
+}
+
+
+static int mrb_fuse_chown(const char * path, uid_t uid, gid_t gid) {
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "chown", 3,
+                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(uid),mrb_fixnum_value(gid));
+  MRB_FUSE_ERR_CHECK;
+  return 0;
+}
+
 
 static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .readdir = mrb_fuse_readdir,
@@ -303,7 +320,13 @@ static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .utimens = mrb_fuse_utimens,
                                               .release = mrb_fuse_release,
                                               .unlink = mrb_fuse_unlink, 
-                                              .mkdir = mrb_fuse_mkdir, };
+                                              .mkdir = mrb_fuse_mkdir,
+                                              .chmod = mrb_fuse_chmod,
+                                              .chown = mrb_fuse_chown,
+
+
+
+ };
 
 int main(int argc, char *argv[]) {
   mrb_state *mrb;
