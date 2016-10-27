@@ -1,7 +1,3 @@
-/*
- * private_data
- * fuse_get_context()->private_data = fs->user_data;
- */
 
 #define FUSE_USE_VERSION 26
 
@@ -11,7 +7,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-# if 90
 #include <mruby.h>
 #include <mruby/compile.h>
 #include <mruby/class.h>
@@ -24,13 +19,11 @@
 #include <mruby/error.h>
 #include <unistd.h>
 
-mrb_state *mrb;
-mrbc_context *mrbc;
-
-# endif
-
 #include <stdio.h>
 #include <syslog.h>
+
+/* mrb_state *mrb;*/
+mrbc_context *mrbc;
 
 #define MRB_FUSE_ERR_CHECK \
   if( mrb->exc ){\
@@ -43,6 +36,9 @@ mrbc_context *mrbc;
     return -EACCES;\
   }
 
+#define MRB_FUSE_PRIVATE_DATA ((struct mrb_fuse_private_data *) fuse_get_context()->private_data)
+
+
 struct mrb_fuse_private_data {
     mrb_state *mrb;
 };
@@ -51,6 +47,7 @@ struct mrb_fuse_private_data {
 static int mrb_fuse_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
+    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
 
     memset(stbuf, 0, sizeof(struct stat));
 
@@ -120,6 +117,7 @@ static int mrb_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
     (void) offset;
     (void) fi;
+    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
 /*
     if(strcmp(path, "/") != 0)
         return -ENOENT;
@@ -149,11 +147,11 @@ static int mrb_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int mrb_fuse_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
+    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
 
-    mrb_state *private_data = (mrb_state *) fuse_get_context()->private_data;
     /* syslog(LOG_NOTICE, "%s:%d:private_data=%d", __FUNCTION__,__LINE__ , private_data ); */
 
-    mrb_value vh = mrb_funcall(private_data, mrb_top_self(mrb), "create", 1, mrb_str_new_cstr(mrb,path) );
+    mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "create", 1, mrb_str_new_cstr(mrb,path) );
     MRB_FUSE_ERR_CHECK;
     int fd = open("/dev/null", fi->flags, mode);
     fi->fh = fd;
@@ -181,12 +179,17 @@ static int mrb_fuse_read(const char *path, char *buf, size_t size, off_t offset,
     size_t len;
     char *str = "aaaaaaaa";
     (void) fi;
-    /*
-    if(strcmp(path, "/file") != 0)
-        return -ENOENT;
-    */
 
-    len = 4;
+    if(strcmp(path, "/entries.rb") == 0){
+        mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+        mrb_value v = mrb_funcall(mrb, mrb_top_self(mrb), "entries_json", 0);
+        str = mrb_str_to_cstr(mrb, v);
+    }
+
+    len = strlen(str);
+
+syslog(LOG_NOTICE, "%s:%d:path=%s,size=%d,offset=%d,len=%d", __FUNCTION__,__LINE__ , path,size,offset,len );
+
     if (offset < len) {
         if (offset + size > len)
             size = len - offset;
@@ -221,6 +224,7 @@ static int mrb_fuse_truncate(const char *path, off_t size)
 static int mrb_fuse_utimens(const char *path, const struct timespec ts[2])
 {
     int res;
+    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
 /*
     struct timeval tv[2];
 
@@ -271,6 +275,7 @@ static int mrb_fuse_release(const char *path, struct fuse_file_info *fi)
 
 static int mrb_fuse_unlink(const char *path)
 {
+    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
     mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "unlink", 1, mrb_str_new_cstr(mrb,path) );
     MRB_FUSE_ERR_CHECK;
     return 0;
@@ -291,10 +296,15 @@ static struct fuse_operations mrb_fuse_op = {
 
 int main(int argc, char *argv[])
 {
+    mrb_state *mrb;
     mrb = mrb_open();
     /* install_mrb_class(mrb); */
     mrb_gc_arena_restore(mrb, 0);
     mrbc = mrbc_context_new(mrb);
+
+    struct mrb_fuse_private_data *private_data;
+    private_data = malloc(sizeof(struct mrb_fuse_private_data));
+    private_data->mrb = mrb;
 
     FILE *fp = fopen("fuse-mruby.rb", "r");
     if (fp == NULL) {
@@ -314,5 +324,5 @@ int main(int argc, char *argv[])
     openlog("ABCD128Z", LOG_CONS | LOG_PID, LOG_USER);
     syslog(LOG_NOTICE, "%s", "I am fuse-mruby.");
 
-    return fuse_main(argc, argv, &mrb_fuse_op, (void *) mrb );
+    return fuse_main(argc, argv, &mrb_fuse_op, private_data );
 }

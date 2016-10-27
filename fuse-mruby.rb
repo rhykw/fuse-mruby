@@ -6,7 +6,7 @@ end
 
 
 
-r = Redis.new "127.0.0.1",6379
+#r = Redis.new "127.0.0.1",6379
 
 @entries = {
   :mode => Stat::S_IFDIR|0755, :size => 1024, 
@@ -27,7 +27,7 @@ def create(arg_path)
   entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
   entries[ pp.last ] = {
       :mode=>Stat::S_IFREG|0600,
-      :size=>0,
+      :size=> (path=="test.txt") ? 8 : 0,
       :mtime=>t,
       :ctime=>t,
   }
@@ -137,6 +137,10 @@ def unlink(arg_path)
   0
 end
 
+def entries_json
+  JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
+end
+
 
  readdir "/"
  readdir "/Maildir/cur"
@@ -152,5 +156,9 @@ end
  unlink  "/Maildir/tmp/testfile"
  readdir "/Maildir/tmp/"
 
-# utimesf "/"
+ #create  "/mode"
 
+ utimesf "/"
+
+#puts @entries.to_json
+#puts JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
