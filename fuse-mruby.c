@@ -282,6 +282,17 @@ static int mrb_fuse_unlink(const char *path) {
   return 0;
 }
 
+
+static int mrb_fuse_mkdir(const char * path, mode_t mode) {
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "mkdir", 2,
+                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(mode));
+  MRB_FUSE_ERR_CHECK;
+  return 0;
+}
+
+
+
 static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .readdir = mrb_fuse_readdir,
                                               .open = mrb_fuse_open,
@@ -291,7 +302,8 @@ static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .truncate = mrb_fuse_truncate,
                                               .utimens = mrb_fuse_utimens,
                                               .release = mrb_fuse_release,
-                                              .unlink = mrb_fuse_unlink, };
+                                              .unlink = mrb_fuse_unlink, 
+                                              .mkdir = mrb_fuse_mkdir, };
 
 int main(int argc, char *argv[]) {
   mrb_state *mrb;
