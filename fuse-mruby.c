@@ -310,6 +310,16 @@ static int mrb_fuse_chown(const char * path, uid_t uid, gid_t gid) {
 }
 
 
+static int mrb_fuse_rmdir(const char *path) {
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "rmdir", 1,
+                             mrb_str_new_cstr(mrb, path));
+  MRB_FUSE_ERR_CHECK;
+  return 0;
+}
+
+
+
 static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .readdir = mrb_fuse_readdir,
                                               .open = mrb_fuse_open,
@@ -323,6 +333,7 @@ static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .mkdir = mrb_fuse_mkdir,
                                               .chmod = mrb_fuse_chmod,
                                               .chown = mrb_fuse_chown,
+                                              .rmdir = mrb_fuse_rmdir,
 
 
 

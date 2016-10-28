@@ -175,7 +175,9 @@ def chown(arg_path,arg_uid,arg_gid)
  0
 end
 
-
+def rmdir(arg_path)
+  unlink(arg_path)
+end
 
 def entries_json
   JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
