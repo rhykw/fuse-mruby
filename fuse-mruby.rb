@@ -137,6 +137,46 @@ def unlink(arg_path)
   0
 end
 
+def mkdir(arg_path,arg_mode)
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  t = Time.new
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ] = {
+      :mode=>Stat::S_IFDIR|arg_mode,
+      :size=> (path=="test.txt") ? 8 : 0,
+      :mtime=>t,
+      :ctime=>t,
+  }
+ 0
+end
+
+def chmod(arg_path,arg_mode)
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  t = Time.new
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ][:mode] = arg_mode
+ 0
+end
+
+def chown(arg_path,arg_uid,arg_gid)
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  t = Time.new
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  #entries[ pp.last ][:mode] = Stat::S_IFDIR|arg_mode
+ 0
+end
+
+
+
 def entries_json
   JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
 end
