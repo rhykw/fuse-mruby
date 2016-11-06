@@ -319,6 +319,32 @@ static int mrb_fuse_rmdir(const char *path) {
 }
 
 
+static int mrb_fuse_symlink(const char *path,const char *path_to) {
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "symlink", 2,
+                             mrb_str_new_cstr(mrb, path),mrb_str_new_cstr(mrb, path_to));
+  MRB_FUSE_ERR_CHECK;
+  return 0;
+}
+
+
+
+static int mrb_fuse_readlink(const char *path,char * buf, size_t buf_len){
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+/*
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readlink", 1,
+                             mrb_str_new_cstr(mrb, path));
+  (void)buf;
+  (void)buf_len;
+  MRB_FUSE_ERR_CHECK;
+*/
+  /* char *s = "abcd1234";*/
+  strncpy(buf, "abcd1234", buf_len);
+  /* buf = s;*/
+  syslog(LOG_NOTICE, "%s: buf_len=%d,buf=%s", __FUNCTION__, buf_len,buf);
+  return 0;
+}
+
 
 static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .readdir = mrb_fuse_readdir,
@@ -334,6 +360,8 @@ static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .chmod = mrb_fuse_chmod,
                                               .chown = mrb_fuse_chown,
                                               .rmdir = mrb_fuse_rmdir,
+                                              .symlink = mrb_fuse_symlink,
+                                              .readlink = mrb_fuse_readlink,
 
 
 

@@ -2,6 +2,7 @@
 class Stat
   S_IFREG = 0100000
   S_IFDIR = 0040000
+  S_IFLNK = 0120000
 end
 
 
@@ -178,6 +179,27 @@ end
 def rmdir(arg_path)
   unlink(arg_path)
 end
+
+def symlink(arg_path,arg_path_to)
+  path = arg_path_to.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  t = Time.new
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ] = {
+      :mode=>Stat::S_IFLNK,
+      :size=> 8,
+      :mtime=>t,
+      :ctime=>t,
+  }
+ 0
+end
+
+def readlink(arg_path)
+  "src"
+end
+
 
 def entries_json
   JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
