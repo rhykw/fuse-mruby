@@ -5,9 +5,7 @@ class Stat
   S_IFLNK = 0120000
 end
 
-
-
-#r = Redis.new "127.0.0.1",6379
+#r = Redis.new "127.0.0.1", 6379
 
 @entries = {
   :mode => Stat::S_IFDIR|0755, :size => 1024, 
@@ -46,7 +44,7 @@ def create(arg_path)
     }
   end
 */
-# pp[0..-2]
+#pp[0.. - 2]
   0
 end
 
@@ -128,11 +126,11 @@ def unlink(arg_path)
     entries = readdir( pp[0..-2].join("/") )
   end
 
-#  entries.each{|entry|
-#    if(entry[0].class == String)
-#      
-#    end
-#  }
+#entries.each{ | entry |
+#if (entry[0].class == String)
+#
+#end
+#}
 
   entries.delete(pp.last)
   0
@@ -220,9 +218,9 @@ end
  unlink  "/Maildir/tmp/testfile"
  readdir "/Maildir/tmp/"
 
- #create  "/mode"
+#create "/mode"
 
  utimesf "/"
 
 #puts @entries.to_json
-#puts JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
+#puts JSON.generate(@entries, { : pretty_print = > true, : indent_with = > 2 })

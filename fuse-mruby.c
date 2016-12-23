@@ -282,33 +282,32 @@ static int mrb_fuse_unlink(const char *path) {
   return 0;
 }
 
-
-static int mrb_fuse_mkdir(const char * path, mode_t mode) {
+static int mrb_fuse_mkdir(const char *path, mode_t mode) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "mkdir", 2,
-                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(mode));
+  mrb_value vh =
+      mrb_funcall(mrb, mrb_top_self(mrb), "mkdir", 2,
+                  mrb_str_new_cstr(mrb, path), mrb_fixnum_value(mode));
   MRB_FUSE_ERR_CHECK;
   return 0;
 }
 
-
-static int mrb_fuse_chmod(const char * path, mode_t mode) {
+static int mrb_fuse_chmod(const char *path, mode_t mode) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "chmod", 2,
-                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(mode));
+  mrb_value vh =
+      mrb_funcall(mrb, mrb_top_self(mrb), "chmod", 2,
+                  mrb_str_new_cstr(mrb, path), mrb_fixnum_value(mode));
   MRB_FUSE_ERR_CHECK;
   return 0;
 }
 
-
-static int mrb_fuse_chown(const char * path, uid_t uid, gid_t gid) {
+static int mrb_fuse_chown(const char *path, uid_t uid, gid_t gid) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
   mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "chown", 3,
-                             mrb_str_new_cstr(mrb, path),mrb_fixnum_value(uid),mrb_fixnum_value(gid));
+                             mrb_str_new_cstr(mrb, path), mrb_fixnum_value(uid),
+                             mrb_fixnum_value(gid));
   MRB_FUSE_ERR_CHECK;
   return 0;
 }
-
 
 static int mrb_fuse_rmdir(const char *path) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
@@ -318,33 +317,30 @@ static int mrb_fuse_rmdir(const char *path) {
   return 0;
 }
 
-
-static int mrb_fuse_symlink(const char *path,const char *path_to) {
+static int mrb_fuse_symlink(const char *path, const char *path_to) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "symlink", 2,
-                             mrb_str_new_cstr(mrb, path),mrb_str_new_cstr(mrb, path_to));
+  mrb_value vh =
+      mrb_funcall(mrb, mrb_top_self(mrb), "symlink", 2,
+                  mrb_str_new_cstr(mrb, path), mrb_str_new_cstr(mrb, path_to));
   MRB_FUSE_ERR_CHECK;
   return 0;
 }
 
-
-
-static int mrb_fuse_readlink(const char *path,char * buf, size_t buf_len){
+static int mrb_fuse_readlink(const char *path, char *buf, size_t buf_len) {
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-/*
-  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readlink", 1,
-                             mrb_str_new_cstr(mrb, path));
-  (void)buf;
-  (void)buf_len;
-  MRB_FUSE_ERR_CHECK;
-*/
+  /*
+    mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readlink", 1,
+                               mrb_str_new_cstr(mrb, path));
+    (void)buf;
+    (void)buf_len;
+    MRB_FUSE_ERR_CHECK;
+  */
   /* char *s = "abcd1234";*/
   strncpy(buf, "abcd1234", buf_len);
   /* buf = s;*/
-  syslog(LOG_NOTICE, "%s: buf_len=%d,buf=%s", __FUNCTION__, buf_len,buf);
+  syslog(LOG_NOTICE, "%s: buf_len=%d,buf=%s", __FUNCTION__, buf_len, buf);
   return 0;
 }
-
 
 static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .readdir = mrb_fuse_readdir,
@@ -355,17 +351,13 @@ static struct fuse_operations mrb_fuse_op = { .getattr = mrb_fuse_getattr,
                                               .truncate = mrb_fuse_truncate,
                                               .utimens = mrb_fuse_utimens,
                                               .release = mrb_fuse_release,
-                                              .unlink = mrb_fuse_unlink, 
+                                              .unlink = mrb_fuse_unlink,
                                               .mkdir = mrb_fuse_mkdir,
                                               .chmod = mrb_fuse_chmod,
                                               .chown = mrb_fuse_chown,
                                               .rmdir = mrb_fuse_rmdir,
                                               .symlink = mrb_fuse_symlink,
-                                              .readlink = mrb_fuse_readlink,
-
-
-
- };
+                                              .readlink = mrb_fuse_readlink, };
 
 int main(int argc, char *argv[]) {
   mrb_state *mrb;
