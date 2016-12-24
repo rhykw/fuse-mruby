@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <syslog.h>
 
-/* mrb_state *mrb;*/
 mrbc_context *mrbc;
 
 #define MRB_FUSE_ERR_CHECK                                                     \
@@ -130,7 +129,7 @@ static int mrb_fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readdir", 1,
                              mrb_str_new_cstr(mrb, path));
-
+  MRB_FUSE_ERR_CHECK;
   mrb_value keys = mrb_hash_keys(mrb, vh);
   int len = RARRAY_LEN(keys);
   int i = 0;
@@ -181,11 +180,13 @@ static int mrb_fuse_read(const char *path, char *buf, size_t size, off_t offset,
   char *str = "aaaaaaaa";
   (void)fi;
 
-  if (strcmp(path, "/entries.rb") == 0) {
-    mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-    mrb_value v = mrb_funcall(mrb, mrb_top_self(mrb), "entries_json", 0);
-    str = mrb_str_to_cstr(mrb, v);
-  }
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value v =
+      mrb_funcall(mrb, mrb_top_self(mrb), "read", 2,
+                  mrb_str_new_cstr(mrb, path), mrb_fixnum_value(offset));
+  MRB_FUSE_ERR_CHECK;
+  /*str = mrb_str_to_cstr(mrb, v);*/
+  str = RSTRING_PTR(mrb_str_to_str(mrb, v));
 
   len = strlen(str);
 
@@ -207,6 +208,19 @@ static int mrb_fuse_write(const char *path, const char *buf, size_t size,
   (void)buf;
   (void)offset;
   (void)fi;
+
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value v;
+  char wbuf[size];
+
+  memcpy(wbuf, buf, size);
+
+  v = mrb_funcall(mrb, mrb_top_self(mrb), "write", 3,
+                  mrb_str_new_cstr(mrb, path), mrb_str_new(mrb, buf, size),
+                  mrb_fixnum_value(offset));
+  MRB_FUSE_ERR_CHECK;
+  size = (size_t)mrb_fixnum(v);
+
   return size;
 }
 
@@ -223,14 +237,6 @@ static int mrb_fuse_truncate(const char *path, off_t size) {
 static int mrb_fuse_utimens(const char *path, const struct timespec ts[2]) {
   int res;
   mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
-  /*
-      struct timeval tv[2];
-
-      tv[0].tv_sec = ts[0].tv_sec;
-      tv[0].tv_usec = ts[0].tv_nsec / 1000;
-      tv[1].tv_sec = ts[1].tv_sec;
-      tv[1].tv_usec = ts[1].tv_nsec / 1000;
-  */
 
   double s1 = (double)ts[0].tv_nsec / 1000 / 1000 / 1000;
   double tta = (double)ts[0].tv_sec + s1;
@@ -238,30 +244,10 @@ static int mrb_fuse_utimens(const char *path, const struct timespec ts[2]) {
   syslog(LOG_NOTICE, "%s:%d:tv_sec = %d , tta = %.4f", __FUNCTION__, __LINE__,
          ts[0].tv_sec, tta);
 
-/*
- *
-    float ttu = (float) ts[1].tv_sec + ts[1].tv_nsec / 1000 / 1000 / 1000;
-*/
-#if 0
-
-    mrb_value v1 = mrb_funcall(mrb, mrb_top_self(mrb), "Time.at", 1, mrb_float_value(mrb,tta) );
-    MRB_FUSE_ERR_CHECK;
-
-#endif
-
-  /*
-      mrb_value v2 = mrb_funcall(mrb, mrb_top_self(mrb), "Time.at", 1,
-     mrb_float_value(mrb,ttu) );
-  */
   mrb_value vh =
       mrb_funcall(mrb, mrb_top_self(mrb), "utimesf", 2,
                   mrb_str_new_cstr(mrb, path), mrb_float_value(mrb, tta));
   MRB_FUSE_ERR_CHECK;
-  /*
-      res = utimes(path, tv);
-      if (res == -1)
-          return -errno;
-  */
   return 0;
 }
 
@@ -327,17 +313,15 @@ static int mrb_fuse_symlink(const char *path, const char *path_to) {
 }
 
 static int mrb_fuse_readlink(const char *path, char *buf, size_t buf_len) {
-  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
   /*
-    mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readlink", 1,
-                               mrb_str_new_cstr(mrb, path));
-    (void)buf;
-    (void)buf_len;
-    MRB_FUSE_ERR_CHECK;
+  (void)buf;
+  (void)buf_len;
   */
-  /* char *s = "abcd1234";*/
-  strncpy(buf, "abcd1234", buf_len);
-  /* buf = s;*/
+  mrb_state *mrb = MRB_FUSE_PRIVATE_DATA->mrb;
+  mrb_value vh = mrb_funcall(mrb, mrb_top_self(mrb), "readlink", 1,
+                             mrb_str_new_cstr(mrb, path));
+  MRB_FUSE_ERR_CHECK;
+  strncpy(buf, RSTRING_PTR(vh), buf_len);
   syslog(LOG_NOTICE, "%s: buf_len=%d,buf=%s", __FUNCTION__, buf_len, buf);
   return 0;
 }
