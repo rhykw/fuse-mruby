@@ -9,7 +9,7 @@ end
 
 @entries = {
   :mode => Stat::S_IFDIR|0755, :size => 1024, 
-  ".qmail"  => {:mode=>Stat::S_IFREG|0444,:size=>5},
+  ".qmail"  => {:mode=>Stat::S_IFREG|0444,:size=>256,:content=>"zzzzzzzzzzzzzzzzzzzzzz"},
   "Maildir" => {:mode=>Stat::S_IFDIR|0755,:size=>1024, 
     "cur"=>{:mode=>Stat::S_IFDIR|0755, :size=>1024}, 
     "new"=>{:mode=>Stat::S_IFDIR|0755, :size=>1024}, 
@@ -187,7 +187,8 @@ def symlink(arg_path,arg_path_to)
   entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
   entries[ pp.last ] = {
       :mode=>Stat::S_IFLNK,
-      :size=> 8,
+      :size=> arg_path.length,
+      :dest=> arg_path,
       :mtime=>t,
       :ctime=>t,
   }
@@ -195,9 +196,32 @@ def symlink(arg_path,arg_path_to)
 end
 
 def readlink(arg_path)
-  "src"
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ][:dest]
 end
 
+def read(arg_path,offset)
+
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ][:content]
+
+end
+
+def write(arg_path,content,offset)
+  path = arg_path.gsub(/\/\/*/,"/").gsub(/(^\/|\/$)/, "")
+  pp = path.split("/")
+
+  entries = (pp.count == 1) ? @entries : readdir( pp[0..-2].join("/") )
+  entries[ pp.last ][:content] = content
+  entries[ pp.last ][:size] = content.length
+
+  content.length
+end
 
 def entries_json
   JSON.generate(@entries, {:pretty_print => true, :indent_with => 2})
